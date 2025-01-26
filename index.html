@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pursuit Church Drawing Board</title>
+    <link rel="icon" href="graylogo.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            background-color: #121212;
+            color: white;
+        }
+
+        .drawing-area {
+            position: relative;
+            height: 100vh;
+            background-color: #333;
+            border: 2px solid #444;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .toolbar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 15px;
+            background-color: #222;
+            border-top: 1px solid #444;
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .tool-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 50%;
+            transition: background-color 0.3s, transform 0.2s;
+            width: 60px;
+            height: 60px;
+        }
+
+        .tool-btn:hover {
+            background-color: #555;
+            transform: scale(1.1);
+        }
+
+        .tool-btn.active {
+            background-color: #777;
+        }
+
+        .color-picker {
+            position: absolute;
+            bottom: 80px;
+            background-color: #222;
+            padding: 10px;
+            display: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            z-index: 15;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .color-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #444;
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 5;
+        }
+
+        .logo-container img {
+            max-height: 50px;
+        }
+
+        canvas {
+            border: 0;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="drawing-area">
+        <canvas id="canvas"></canvas>
+        <div class="toolbar">
+            <button class="tool-btn" id="pencilBtn"><i class="bi bi-pencil"></i></button>
+            <button class="tool-btn" data-tool="eraser"><i class="bi bi-eraser"></i></button>
+            <button class="tool-btn" data-tool="clearAll"><i class="bi bi-trash"></i></button>
+        </div>
+        <div class="color-picker" id="colorPicker">
+            <div class="color-circle" style="background-color: white;" data-color="white"></div>
+            <div class="color-circle" style="background-color: blue;" data-color="blue"></div>
+            <div class="color-circle" style="background-color: red;" data-color="red"></div>
+            <div class="color-circle" style="background-color: green;" data-color="green"></div>
+            <div class="color-circle" style="background-color: yellow;" data-color="yellow"></div>
+        </div>
+        <div class="logo-container">
+            <img src="graylogo.png" alt="Logo" class="logo">
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const pencilBtn = document.getElementById('pencilBtn');
+        const colorCircles = document.querySelectorAll('.color-circle');
+        const toolbarBtns = document.querySelectorAll('.tool-btn');
+        let drawing = false, erasing = false, color = 'white', startX, startY;
+        const eraserSize = 30, brushSize = 5;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        function drawLine(x1, y1, x2, y2, color, size) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = size;
+            ctx.stroke();
+        }
+
+        function handleDrawing(e) {
+            if (!drawing) return;
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+
+            if (erasing) {
+                ctx.clearRect(x - eraserSize / 2, y - eraserSize / 2, eraserSize, eraserSize);
+            } else {
+                drawLine(startX, startY, x, y, color, brushSize);
+                startX = x;
+                startY = y;
+            }
+        }
+
+        canvas.addEventListener('mousedown', e => { drawing = true; startX = e.clientX; startY = e.clientY; });
+        canvas.addEventListener('mousemove', handleDrawing);
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('touchstart', e => { drawing = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY; });
+        canvas.addEventListener('touchmove', handleDrawing);
+        canvas.addEventListener('touchend', () => drawing = false);
+
+        pencilBtn.addEventListener('click', () => {
+            colorPicker.style.display = colorPicker.style.display === 'flex' ? 'none' : 'flex';
+            erasing = false;  // Disable erasing when switching to pencil
+            setActiveTool('pencil'); // Set pencil as active tool
+        });
+
+        colorCircles.forEach(circle => {
+            circle.addEventListener('click', () => {
+                color = circle.getAttribute('data-color');
+                pencilBtn.style.color = color; // Display the selected color on the pencil button
+                colorPicker.style.display = 'none'; // Hide the color picker
+            });
+        });
+
+        document.querySelectorAll('.tool-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const tool = button.getAttribute('data-tool');
+                if (tool === 'clearAll') {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    setActiveTool(null); // Reset active tool after clearing
+                } else if (tool === 'eraser') {
+                    erasing = !erasing;
+                    setActiveTool('eraser'); // Set eraser as active when erasing
+                } else {
+                    setActiveTool('pencil'); // Set pencil as active when it's selected
+                }
+            });
+        });
+
+        function setActiveTool(toolId) {
+            document.querySelectorAll('.tool-btn').forEach(button => button.classList.remove('active'));
+            if (toolId) {
+                document.querySelector(`[data-tool="${toolId}"]`).classList.add('active');
+            }
+        }
+
+        // Initialize canvas size on page load
+        window.onload = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+    </script>
+</body>
+</html>
