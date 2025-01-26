@@ -146,8 +146,8 @@
         <canvas id="canvas"></canvas>
         <div class="toolbar">
             <button class="tool-btn" id="pencilBtn"><i class="bi bi-pencil"></i></button>
-            <button class="tool-btn" data-tool="eraser"><i class="bi bi-eraser"></i></button>
-            <button class="tool-btn" data-tool="clearAll"><i class="bi bi-trash"></i></button>
+            <button class="tool-btn" id="eraserBtn" data-tool="eraser"><i class="bi bi-eraser"></i></button>
+            <button class="tool-btn" id="clearAllBtn" data-tool="clearAll"><i class="bi bi-trash"></i></button>
         </div>
         <div class="logo-container">
             <img src="graylogo.png" alt="Logo" class="logo">
@@ -158,7 +158,9 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const pencilBtn = document.getElementById('pencilBtn');
-        let drawing = false, color = 'white', brushSize = 5;
+        const eraserBtn = document.getElementById('eraserBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        let drawing = false, color = 'white', brushSize = 5, isEraserActive = false;
         let colorPickerLoaded = false;
 
         // Resize the canvas to fit the window
@@ -178,7 +180,7 @@
         canvas.addEventListener('mousemove', (e) => {
             if (drawing) {
                 ctx.lineTo(e.clientX, e.clientY);
-                ctx.strokeStyle = color;
+                ctx.strokeStyle = isEraserActive ? '#333' : color;  // Use background color for erasing
                 ctx.lineWidth = brushSize;
                 ctx.lineCap = 'round';
                 ctx.stroke();
@@ -186,6 +188,27 @@
         });
 
         canvas.addEventListener('mouseup', () => drawing = false);
+
+        // Pencil Tool
+        pencilBtn.addEventListener('click', () => {
+            isEraserActive = false;
+            eraserBtn.classList.remove('active');
+            pencilBtn.classList.add('active');
+            color = 'white';  // Default pencil color
+        });
+
+        // Eraser Tool
+        eraserBtn.addEventListener('click', () => {
+            isEraserActive = true;
+            pencilBtn.classList.remove('active');
+            eraserBtn.classList.add('active');
+            color = 'white';  // Eraser tool will use the same background color to erase
+        });
+
+        // Clear All Tool
+        clearAllBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas
+        });
 
         // Toggle color picker
         pencilBtn.addEventListener('click', () => {
